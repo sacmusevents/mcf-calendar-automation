@@ -1,0 +1,31 @@
+name: Download Calendar
+
+on:
+  schedule:
+    # Run every 6 hours (0, 6, 12, 18 UTC) on main branch
+    - cron: '0 */6 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download ICS file
+        run: |
+          curl -L "https://calendar.google.com/calendar/ical/calendar%40mcfolsom.com/public/basic.ics" -o calendar.ics
+          echo "Downloaded at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> download.log
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "calendar-bot"
+          git config user.email "actions@github.com"
+          git add calendar.ics download.log
+          git diff-index --quiet HEAD || git commit -m "Update calendar - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
